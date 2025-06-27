@@ -3,10 +3,12 @@ const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 require('dotenv').config()
 
+// Create a new admin user
 async function admin(req, res) {
     try {
         const { body } = req
 
+        // Checks if an admin already exists with the given email
         const isAdminExist = await Admin.findOne({
             where: {
                 email: body.email,
@@ -23,6 +25,7 @@ async function admin(req, res) {
             });
         }
 
+        // Hashes the password using bcrypt
         const hashPassword = bcrypt.hashSync(body.password, bcrypt.genSaltSync(10));
         const adminData = await Admin.create({
             email: body.email,
@@ -48,6 +51,7 @@ async function admin(req, res) {
     }
 }
 
+// Admin login handler
 async function adminLogin(req, res) {
     try {
         const { email, password } = req.body;
@@ -67,6 +71,7 @@ async function adminLogin(req, res) {
             });
         }
 
+        // Compare hashed password
         const isMatch = bcrypt.compareSync(password, isAdminExist.password);
 
         if (!isMatch) {
@@ -76,6 +81,7 @@ async function adminLogin(req, res) {
             });
         }
 
+        // Prepare JWT payload and sign token
         const payload = { id: isAdminExist.id, email: isAdminExist.email, role: 'admin' };
 
         const token = jwt.sign(
@@ -100,10 +106,12 @@ async function adminLogin(req, res) {
     }
 }
 
+// Create a new seller account
 async function createSeller(req, res) {
     try {
         const { name, email, mobile, country, state, password, skills } = req.body;
 
+        // Check if seller already exists
         const isSellerExist = await Sellers.findOne({
             where: {
                 email,
@@ -119,6 +127,7 @@ async function createSeller(req, res) {
             });
         }
 
+        // Hash seller password
         const hashedPassword = await bcrypt.hash(password, 10);
         const seller = await Sellers.create({
             name,
@@ -129,6 +138,7 @@ async function createSeller(req, res) {
             password: hashedPassword
         });
 
+        // Bulk insert skills if provided
         if (Array.isArray(skills) && skills?.length > 0) {
             const skillSet = skills.map((skills) => ({
                 skills,
@@ -149,6 +159,7 @@ async function createSeller(req, res) {
     }
 }
 
+// Fetch a paginated list of all sellers
 async function listSellers(req, res) {
     try {
         const { query } = req
@@ -156,12 +167,14 @@ async function listSellers(req, res) {
         const limit = +(query.limit) || 10;
         const offset = (page - 1) * limit;
 
+        // Count total sellers (excluding soft-deleted)
         const total = await Sellers.count({
             where: {
                 deleted_at: null
             }
         });
 
+        // Fetch paginated seller records with associated skills
         const sellers = await Sellers.findAll({
             where: { deleted_at: null },
             include: [

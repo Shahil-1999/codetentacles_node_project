@@ -3,10 +3,12 @@ const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 require('dotenv').config()
 
+// Seller login handler
 async function sellerLogin(req, res) {
     try {
         const { email, password } = req.body;
 
+        // Find seller by email
         const isSellerExist = await Sellers.findOne({
             where: {
                 email,
@@ -22,6 +24,7 @@ async function sellerLogin(req, res) {
             });
         }
 
+        // Check if password matches
         const isMatch = bcrypt.compareSync(password, isSellerExist.password);
 
         if (!isMatch) {
@@ -31,6 +34,7 @@ async function sellerLogin(req, res) {
             });
         }
 
+        // Generate JWT token
         const payload = { id: isSellerExist.id, email: isSellerExist.email, role: 'seller' };
         const token = jwt.sign(payload, process.env.SECRET_KEY, { expiresIn: '3d' });
 
@@ -47,16 +51,17 @@ async function sellerLogin(req, res) {
     }
 }
 
+// Create a new product
 async function createProduct(req, res) {
     try {
         const { body } = req;
-        const { id } = req.user;
+        const { id } = req.user; // seller_id from JWT payload
 
         await Products.create({
             product_name: body.product_name,
             product_description: body.product_description,
             seller_id: id,
-            brands: JSON.stringify(body.brands),
+            brands: JSON.stringify(body.brands), // Store brands as JSON string
         });
 
         return res.status(201).json({
@@ -68,16 +73,19 @@ async function createProduct(req, res) {
     }
 }
 
+// Get a paginated list of all products
 async function productList(req, res) {
     try {
         const page = +req.query.page || 1;
         const limit = +req.query.limit || 10;
         const offset = (page - 1) * limit;
 
+        // Count total non-deleted products
         const total = await Products.count({
             where: { deleted_at: null }
         });
 
+        // Fetch paginated products
         const products = await Products.findAll({
             where: { deleted_at: null },
             attributes: ['product_name', 'product_description', 'brands'],
@@ -86,6 +94,7 @@ async function productList(req, res) {
             order: [['created_at', 'DESC']]
         });
 
+        // Parse brands JSON for each product
         const result = products.map(p => ({
             ...p.toJSON(),
             brands: JSON.parse(p.brands || '[]')
@@ -105,12 +114,13 @@ async function productList(req, res) {
     }
 }
 
-
+// Delete a product
 async function deleteProduct(req, res) {
     try {
-        const { id } = req.user;
+        const { id } = req.user; // seller_id from JWT
         const { query } = req;
 
+        // Check if product exists and belongs to seller
         const product = await Products.findOne({
             where: {
                 id: query.id,
@@ -125,6 +135,7 @@ async function deleteProduct(req, res) {
             });
         }
 
+        // Soft delete the product
         await Products.update(
             { deleted_at: new Date() },
             { where: { id: query.id } }
