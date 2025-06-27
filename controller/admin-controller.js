@@ -171,12 +171,13 @@ async function listSellers(req, res) {
                     attributes: ['skills']
                 }
             ],
+            attributes: { exclude: ['created_at', 'updated_at', 'deleted_at'] },
             offset,
             limit,
         });
 
         return res.status(200).json({
-            msg: 'Sellers fetched successfully',
+            msg: 'Seller details successfully fetched',
             data: sellers,
             pagination: {
                 page,

@@ -4,6 +4,5 @@ module.exports = {
   Pagination: require('./pagination-validation'),
   SellerLoginValidation: require('./seller-login-validation'),
   CreateProductValidation: require('./create-product-validation'),
-  CreateBrandValidation: require('./create-brand-validation'),
   DeleteProductValidation: require('./delete-product-validation'),
 };

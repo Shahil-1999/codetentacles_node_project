@@ -1,4 +1,4 @@
-const { Sellers, Products, Brands } = require('../models')
+const { Sellers, Products } = require('../models')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 require('dotenv').config()
@@ -49,13 +49,14 @@ async function sellerLogin(req, res) {
 
 async function createProduct(req, res) {
     try {
-        const { name, description } = req.body;
+        const { body } = req;
         const { id } = req.user;
 
         await Products.create({
-            name,
-            description,
+            product_name: body.product_name,
+            product_description: body.product_description,
             seller_id: id,
+            brands: JSON.stringify(body.brands),
         });
 
         return res.status(201).json({
@@ -67,86 +68,43 @@ async function createProduct(req, res) {
     }
 }
 
-async function createBrand(req, res) {
-    try {
-        const { name, details, image, price, product_id } = req.body;
-        const { id } = req.user;
-
-        const isProductExist = await Products.findOne({
-            where: {
-                id: product_id,
-                seller_id: id,
-                deleted_at: null
-            },
-            attributes: ['id']
-        });
-
-        if (!isProductExist) {
-            return res.status(404).json({
-                msg: "Product not found",
-                data: {}
-            });
-        }
-
-        await Brands.create({
-            name,
-            details,
-            image,
-            price,
-            product_id
-        });
-
-        return res.status(201).json({
-            msg: 'Brand created successfully'
-        });
-    } catch (err) {
-        console.log(err);
-        return res.status(500).json({ msg: 'Failed to create brand', error: err.message });
-    }
-}
-
 async function productList(req, res) {
     try {
-        const { query } = req;
-        const page = +(query.page) || 1;
-        const limit = +(query.limit) || 10;
+        const page = +req.query.page || 1;
+        const limit = +req.query.limit || 10;
         const offset = (page - 1) * limit;
 
         const total = await Products.count({
-            where: {
-                deleted_at: null
-            }
+            where: { deleted_at: null }
         });
 
-        const product = await Products.findAll({
-            where: {
-                deleted_at: null
-            },
-            include: [
-                {
-                    model: Brands,
-                    required: false,
-                    attributes: ['name', 'details', 'image', 'price']
-                }
-            ],
+        const products = await Products.findAll({
+            where: { deleted_at: null },
+            attributes: ['product_name', 'product_description', 'brands'],
             offset,
             limit,
+            order: [['created_at', 'DESC']]
         });
+
+        const result = products.map(p => ({
+            ...p.toJSON(),
+            brands: JSON.parse(p.brands || '[]')
+        }));
 
         return res.status(200).json({
             msg: 'Product list fetched successfully',
-            data: product,
-            pagination: {
-                page,
-                limit,
-                total
-            }
+            data: result,
+            pagination: { page, limit, total }
         });
     } catch (err) {
-        console.log(err);
-        return res.status(500).json({ msg: 'Failed to fetch product list', error: err.message });
+        console.error(err);
+        return res.status(500).json({
+            msg: 'Failed to fetch product list',
+            error: err.message
+        });
     }
 }
+
 
 async function deleteProduct(req, res) {
     try {
@@ -172,11 +130,6 @@ async function deleteProduct(req, res) {
             { where: { id: query.id } }
         );
 
-        await Brands.update(
-            { deleted_at: new Date() },
-            { where: { product_id: query.id } }
-        );
-
         return res.status(200).json({
             msg: 'Product deleted successfully'
         });
@@ -192,7 +145,6 @@ async function deleteProduct(req, res) {
 module.exports = {
     sellerLogin,
     createProduct,
-    createBrand,
     productList,
     deleteProduct,
 }

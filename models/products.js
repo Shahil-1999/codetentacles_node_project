@@ -9,17 +9,21 @@ const Product = sequelize.define(table.DB_TABLES.PRODUCTS, {
         primaryKey: true,
         autoIncrement: true,
     },
-    name: {
+    product_name: {
         type: DataTypes.STRING(255),
         allowNull: false,
     },
-    description: {
+    product_description: {
         type: DataTypes.TEXT('long'),
         allowNull: true,
     },
     seller_id: {
         type: DataTypes.INTEGER(11),
         allowNull: false,
+    },
+    brands: {
+        type: DataTypes.TEXT,
+        allowNull: true
     },
     created_at: {
         type: DataTypes.DATE,
@@ -38,11 +42,11 @@ const Product = sequelize.define(table.DB_TABLES.PRODUCTS, {
 })
 
 Product.belongsTo(Seller, {
-  foreignKey: 'seller_id',
+    foreignKey: 'seller_id',
 });
 
 Seller.hasMany(Product, {
-  foreignKey: 'seller_id',
+    foreignKey: 'seller_id',
 });
 
 module.exports = Product

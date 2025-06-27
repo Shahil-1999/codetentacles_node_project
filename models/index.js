@@ -3,5 +3,4 @@ module.exports = {
     Sellers: require('./sellers'),
     SellerSkillAssociations: require('./seller-skill-associations'),
     Products: require('./products'),
-    Brands: require('./brands'),
 }
