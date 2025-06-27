@@ -1,4 +1,4 @@
-const { Sellers, Products, Brands, ProductBrandAssociations } = require('../models')
+const { Sellers, Products, Brands } = require('../models')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
 require('dotenv').config()
